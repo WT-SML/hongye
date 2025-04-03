@@ -1,47 +1,37 @@
 <script setup>
-import { onMounted, onUnmounted, ref } from 'vue';
+import { onMounted, onUnmounted, ref, reactive } from "vue"
 import gsap from "gsap"
 import { ScrollTrigger } from "gsap/ScrollTrigger"
+import hongye from "~/assets/imgs/hongye.png"
+import hongyeTransparent from "~/assets/imgs/hongye-transparent.png"
 
-const main = ref()
-let tl
-let ctx
+// 状态
+const state = reactive({})
 
-function toggleTimeline() {
-  tl.reversed(!tl.reversed())
-}
-
+// 挂载
 onMounted(() => {
-  ctx = gsap.context((self) => {
-    const boxes = gsap.utils.toArray(".box")
-    tl = gsap
-      .timeline()
-      .to(boxes[0], { x: 120, rotation: 360 })
-      .to(boxes[1], { x: -120, rotation: -360 }, "<")
-      .to(boxes[2], { y: -166 })
-      .reverse()
-  }, main.value) // <- Scope!
+  // 注册ScrollTrigger插件
+  gsap.registerPlugin(ScrollTrigger)
 })
-
-onUnmounted(() => {
-  ctx.revert() // <- Easy Cleanup!
-})
+// 卸载
+onUnmounted(() => {})
 </script>
 
 <template>
-  <main>
-    <section class="boxes-container" ref="main">
-      <h1>Use the button to toggle a Timeline</h1>
-      <div>
-        <button @click="toggleTimeline" class="my-5 p-3">Toggle Timeline</button>
+  <div>
+    <!-- 首屏 -->
+    <div class="h-100vh">
+      <div class="text-50px flex justify-center">你好，我是红叶。</div>
+      <div class="text-24px flex justify-center items-center">
+        <div class="border border-[#fff]">欲买桂花同载酒，终不似，少年游。</div>
+        <img :src="hongye" class="rounded-50%" width="150" />
+        <img :src="hongyeTransparent" class="rounded-50%" width="150" />
+        
       </div>
-      <div class="box gradient-green">Box 1</div>
-      <div class="box gradient-green">Box 2</div>
-      <div class="box gradient-green">Box 3</div>
-    </section>
-  </main>
+    </div>
+    <!-- 月落乌啼霜满天 -->
+    <div>月落乌啼霜满天</div>
+  </div>
 </template>
 
-<style lang="scss" scoped>
-
-</style>
+<style lang="scss" scoped></style>
