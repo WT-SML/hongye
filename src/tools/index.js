@@ -311,3 +311,209 @@ export class Point {
     self.el.remove()
   }
 }
+// 波动效果
+export class SVG {
+  constructor({ el }) {
+    this.ratio = 420 / 297
+
+    this.el = el
+
+    this.resizeHandler()
+    window.addEventListener("resize", this.resizeHandler.bind(this))
+  }
+
+  resizeHandler() {
+    const maxWidth = window.innerWidth - 100
+    const maxHeight = window.innerHeight - 100
+
+    this.width = maxWidth
+    this.height = this.width / this.ratio
+
+    if (this.height > maxHeight) {
+      this.height = maxHeight
+      this.width = maxHeight * this.ratio
+    }
+
+    this.el.setAttribute("width", this.width + "px")
+    this.el.setAttribute("height", this.height + "px")
+  }
+}
+// 波动效果
+export class Scene {
+  constructor({ svg, stroke }) {
+    this.stroke = stroke
+    this.svg = svg
+    this.isPaused = false
+    window.addEventListener("resize", this.resizeHandler.bind(this))
+
+    this.maxLines = 100
+    this.maxPoints = 10
+  }
+
+  resizeHandler() {
+    this.generate()
+  }
+
+  generate() {
+    this.lines = []
+
+    this.maxLines = Math.floor(this.svg.width / 15)
+    this.maxPoints = Math.floor(this.svg.height / 90)
+
+    this.gapX = this.svg.width / (this.maxLines - 1)
+    this.gapY = this.svg.height / (this.maxPoints - 1)
+
+    for (let i = 0; i < this.maxLines; i++) {
+      const line = {}
+      const points = []
+
+      let x = i * this.gapX
+
+      for (let j = 0; j < this.maxPoints; j++) {
+        let y = j * this.gapY
+
+        const point = {
+          offsetX: 0,
+          offsetY: 0,
+          x: x,
+          y: y,
+        }
+
+        points.push(point)
+      }
+
+      line.points = points
+
+      this.lines.push(line)
+    }
+
+    if (this.isPaused) {
+      this.move(performance.now())
+      this.draw()
+      this.save()
+    } else {
+      this.animate()
+    }
+  }
+
+  move(time) {
+    this.lines.forEach((line) => {
+      line.points.forEach((point, index) => {
+        point.offsetY = Math.cos(point.x * 0.025 + time * 0.00025) * 40
+        point.offsetX =
+          Math.sin((point.y + point.offsetY) * 0.02 + time * 0.000125) *
+          this.gapX *
+          2.5
+
+        if (index === 0 || index === line.points.length - 1) {
+          point.offsetX = 0
+          point.offsetY = 0
+        }
+      })
+    })
+  }
+
+  draw() {
+    this.svg.el.innerHTML = ""
+
+    const type = "Q"
+
+    this.lines.forEach((line, index) => {
+      let d = ""
+
+      line.points.forEach((point, index) => {
+        const cmd = index === 0 ? "M" : type
+
+        const x = point.x + point.offsetX
+        const y = point.y + point.offsetY
+
+        if (type === "Q") {
+          let p2 = point
+          if (index > 0 && index < line.points.length - 1) {
+            p2 = line.points[index - 1]
+          }
+
+          const cx = point.x
+          const cy = (y + p2.y) * 0.5
+
+          d += " " + cmd + " " + cx + "," + cy + " " + x + "," + y
+        } else if (type === "L") {
+          d += " " + cmd + " " + x + "," + y
+        }
+        try {
+          const circle = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "circle"
+          )
+          circle.setAttribute("fill", "none")
+          circle.setAttribute("stroke", this.stroke)
+          circle.setAttribute("stroke-width", "1px")
+
+          circle.setAttribute("r", 1)
+          circle.setAttribute("cx", x)
+          circle.setAttribute("cy", y)
+
+          this.svg.el.append(circle)
+        } catch (e) {
+          console.log(e)
+        }
+      })
+      try {
+        const path = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "path"
+        )
+        path.setAttribute("fill", "none")
+        path.setAttribute("stroke", this.stroke)
+        path.setAttribute("stroke-width", "1px")
+
+        path.setAttribute("d", d)
+        this.svg.el.append(path)
+      } catch (e) {
+        console.log(e)
+      }
+    })
+
+    const outer = document.createElementNS("http://www.w3.org/2000/svg", "path")
+    outer.setAttribute("fill", "none")
+    outer.setAttribute("stroke", this.stroke)
+    outer.setAttribute("stroke-width", "1px")
+
+    outer.setAttribute(
+      "d",
+      "M 0,0 L " +
+        this.svg.width +
+        ",0 M " +
+        this.svg.width +
+        "," +
+        this.svg.height +
+        " L 0," +
+        this.svg.height
+    )
+
+    this.svg.el.append(outer)
+  }
+
+  animate() {
+    this.startTime = performance.now()
+    if (this.raf) {
+      cancelAnimationFrame(this.raf)
+    }
+    this.tick()
+  }
+
+  tick(nowTime) {
+    if (!this.isPaused) {
+      const deltaTime = nowTime - this.startTime
+
+      this.move(deltaTime)
+      this.draw()
+    }
+
+    this.raf = requestAnimationFrame(this.tick.bind(this))
+  }
+
+  toggle() {
+    this.isPaused = !this.isPaused
+  }
+}
