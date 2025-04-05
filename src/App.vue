@@ -15,11 +15,11 @@ onUnmounted(() => {})
 <template>
   <div>
     <!-- 首屏 -->
-    <homeScreen class="border-b" />
+    <homeScreen />
     <!-- 身份 -->
     <role />
     <!-- 诗词 -->
-    <poetry class="border-t" />
+    <poetry />
     <!-- 波动效果 -->
     <fluctuationEffect />
     <!-- 备案 -->
